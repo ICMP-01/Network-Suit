@@ -483,8 +483,8 @@ function NetworkSuiteInner() {
               </div>
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-3xl font-black text-[#ffffff] tracking-tight drop-shadow-md">Network Suite</h1>
-                  <span className="text-[11px] font-black px-2.5 py-1 rounded bg-cyan-900/50 text-cyan-300 border border-cyan-700 shadow-[0_0_10px_rgba(6,182,212,0.3)]">PRO</span>
+                  <h1 className="text-3xl font-black text-[#ffffff] tracking-tight drop-shadow-md">Network Suit</h1>
+                  <span className="text-[11px] font-black px-2.5 py-1 rounded bg-green-900/50 text-green-300 border border-green-700 shadow-[0_0_10px_rgba(34,197,94,0.3)]">LIVE</span>
                 </div>
                 <div className="text-[13px] font-mono font-bold text-[#a3b3cc]">
                   Professional Grade Interactive IP Tooling & Security
@@ -565,7 +565,7 @@ function NetworkSuiteInner() {
           {/* Breadcrumb */}
           <div className="ns-no-print flex items-center gap-2 px-6 py-2 text-[12px] font-mono text-[#a3b3cc] mb-4">
             <Radar size={14} className="text-[#a3b3cc]" />
-            <span className="font-bold">NEXUS PRO</span>
+            <span className="font-bold">Network Suit</span>
             <ChevronRight size={12} />
             <span className="text-[#8b949e]">{activeSuite ? 'Suite Features' : 'Internet Protocol Tools'}</span>
             <ChevronRight size={12} />
