@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calculator, Globe, GitBranch, Layers, List, BookOpen,
@@ -272,13 +272,40 @@ function HorizontalTabs({ active, onChange }) {
 function NetworkSuiteInner() {
   const { xp, streak, unlockAchievement, achievements, certPrepMode, setCertPrepMode, theme, setTheme } = useSuite();
   const [activeTool, setActiveTool] = useState(() => getToolFromHash());
-  const [activeSuite, setActiveSuite] = useState(null); // suite panel id or null
+  const [activeSuite, setActiveSuite] = useState(null);
   const [showExport, setShowExport] = useState(false);
   const [toast, setToast] = useState(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showDailyChallenge, setShowDailyChallenge] = useState(true);
   const toastIdx = useRef(0);
 
+  // Daily challenge — seeded by day of year so same question all day
+  const dailyChallenge = useMemo(() => {
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+    const challenges = [
+      { q: 'What is the subnet mask for a /26 network?', a: '255.255.255.192', opts: ['255.255.255.128','255.255.255.192','255.255.255.224','255.255.255.240'] },
+      { q: 'How many usable host addresses does a /28 subnet provide?', a: '14', opts: ['12','14','16','30'] },
+      { q: 'Which RFC defines private IPv4 address space?', a: 'RFC 1918', opts: ['RFC 791','RFC 1918','RFC 2460','RFC 4271'] },
+      { q: 'What is the wildcard mask for /24?', a: '0.0.0.255', opts: ['255.255.255.0','0.0.0.255','0.0.0.0','255.0.0.0'] },
+      { q: 'How many subnets does a /27 create from a /24?', a: '8', opts: ['4','6','8','16'] },
+      { q: 'What port does DNS use for queries?', a: 'UDP 53', opts: ['TCP 443','UDP 53','TCP 53','UDP 67'] },
+      { q: 'Which Layer handles IP addressing in the OSI model?', a: 'Layer 3', opts: ['Layer 2','Layer 3','Layer 4','Layer 5'] },
+    ];
+    return challenges[dayOfYear % challenges.length];
+  }, []);
+  const [dcAnswered, setDcAnswered] = useState(null);
+
   const dismissToast = useCallback(() => setToast(null), []);
+
+  // Share current tool URL
+  const handleShareTool = useCallback(() => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      setToast({ f: `Link copied! Share: ${url}`, cat: 'Share', icon: '🔗' });
+    }).catch(() => {
+      setToast({ f: 'Could not copy — use Ctrl+C on the address bar', cat: 'Share', icon: '🔗' });
+    });
+  }, []);
 
   const switchTool = useCallback((id) => {
     setActiveTool(id);
@@ -462,9 +489,45 @@ function NetworkSuiteInner() {
             filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.8)) !important;
         }
 
+        [data-theme="light"] {
+            background: #f0f4f8 !important;
+            color: #1a202c !important;
+        }
+        [data-theme="light"] .ns-glass, [data-theme="light"] .ns-glass-cyan, [data-theme="light"] .ns-glass-green, [data-theme="light"] .ns-glass-purple, [data-theme="light"] .ns-glass-blue, [data-theme="light"] .ns-glass-amber {
+            background: linear-gradient(180deg,#ffffff,#f7fafc) !important;
+            border: 1px solid rgba(0,0,0,0.08) !important;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+        }
+        [data-theme="light"] .text-white { color: #1a202c !important; }
+        [data-theme="light"] .text-gray-300 { color: #4a5568 !important; }
+        [data-theme="light"] .text-gray-400, [data-theme="light"] .text-gray-500, [data-theme="light"] .ns-muted { color: #718096 !important; }
+        [data-theme="light"] .text-\[\#8b949e\], [data-theme="light"] .text-\[\#a3b3cc\] { color: #4a5568 !important; }
+        [data-theme="light"] .text-\[\#e6edf3\] { color: #2d3748 !important; }
+        [data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea { background: #fff !important; border-color: #cbd5e0 !important; color: #1a202c !important; }
+        [data-theme="light"] .bg-grid-fx {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px) !important;
+        }
+        [data-theme="light"] .bg-glow-fx {
+            background: radial-gradient(circle at 15% 50%, rgba(6,182,212,0.05), transparent 40%),
+                        radial-gradient(circle at 85% 30%, rgba(168,85,247,0.05), transparent 40%) !important;
+        }
+        /* Mobile Layout Fixes (item 14) */
+        @media (max-width: 640px) {
+            .ns-glass, .ns-glass-cyan, .ns-glass-green, .ns-glass-purple, .ns-glass-blue, .ns-glass-amber {
+                transform: none !important;
+            }
+            table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+            .grid { grid-template-columns: 1fr !important; }
+            header { padding-left: 1rem !important; padding-right: 1rem !important; }
+        }
+
       `}</style>
 
-      <div className="flex flex-col h-full min-h-screen relative overflow-hidden transition-colors duration-500" style={{ background: theme === 'cyberpunk' ? '#0f0f1b' : '#0d1117' }} data-theme={theme}>
+      <div className="flex flex-col h-full min-h-screen relative overflow-hidden transition-colors duration-500"
+        style={{ background: theme === 'cyberpunk' ? '#0f0f1b' : theme === 'light' ? '#f0f4f8' : '#0d1117' }}
+        data-theme={theme}>
         {/* Background Effects */}
         <div className="bg-glow-fx" />
         <div className="bg-grid-fx" />
@@ -483,7 +546,7 @@ function NetworkSuiteInner() {
               </div>
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <h1 className="text-3xl font-black text-[#ffffff] tracking-tight drop-shadow-md">Network Suit</h1>
+                  <h1 className="text-3xl font-black text-[#ffffff] tracking-tight drop-shadow-md">Network Suite</h1>
                   <span className="text-[11px] font-black px-2.5 py-1 rounded bg-green-900/50 text-green-300 border border-green-700 shadow-[0_0_10px_rgba(34,197,94,0.3)]">LIVE</span>
                 </div>
                 <div className="text-[13px] font-mono font-bold text-[#a3b3cc]">
@@ -498,11 +561,21 @@ function NetworkSuiteInner() {
               <div className="flex items-center gap-1 bg-[#161b22] rounded-xl p-1.5 border border-white/5 mr-2">
                 <button onClick={()=>setTheme('hacker')} className={`p-1.5 rounded-lg transition-all ${theme==='hacker'?'bg-emerald-500/20 text-emerald-400':'text-gray-500 hover:text-gray-300'}`} title="Hacker Theme"><Terminal size={14}/></button>
                 <button onClick={()=>setTheme('cyberpunk')} className={`p-1.5 rounded-lg transition-all ${theme==='cyberpunk'?'bg-pink-500/20 text-pink-400':'text-gray-500 hover:text-gray-300'}`} title="Cyberpunk Theme"><Zap size={14}/></button>
+                <button onClick={()=>setTheme('light')} className={`p-1.5 rounded-lg transition-all ${theme==='light'?'bg-yellow-500/20 text-yellow-400':'text-gray-500 hover:text-gray-300'}`} title="Light Mode">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                </button>
               </div>
               <button onClick={() => setCertPrepMode(m => !m)}
                 className="group flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-mono font-bold transition-all shadow-md"
                 style={{ background: certPrepMode ? '#f59e0b' : '#161b22', border: `1px solid ${certPrepMode ? '#f59e0b' : 'rgba(240,246,252,0.1)'}`, color: certPrepMode ? '#000' : '#a3b3cc' }}>
                 <span className="group-hover:scale-110 transition-transform">🎓</span> Cert Prep {certPrepMode ? 'ON' : 'OFF'}
+              </button>
+              <button onClick={handleShareTool}
+                className="group flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-mono font-bold transition-all hover:bg-[#21262d] shadow-md hover:-translate-y-0.5"
+                style={{ background: '#161b22', border: '1px solid rgba(240,246,252,0.1)', color: '#a3b3cc' }}
+                title="Copy link to this tool">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:text-white transition-colors"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Share
               </button>
               <button onClick={() => setShowShortcuts(s => !s)}
                 className="group flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-mono font-bold transition-all hover:bg-[#21262d] shadow-md hover:-translate-y-0.5"
@@ -562,10 +635,42 @@ function NetworkSuiteInner() {
         {/* ── CONTENT AREA ── */}
         <main className="flex-1 overflow-y-auto px-4 py-6 relative z-10" style={{ background: 'transparent' }}>
           
+          {/* ── Daily Challenge Banner (item 13) ── */}
+          {showDailyChallenge && (
+            <div className="ns-no-print mb-4 mx-2 rounded-2xl overflow-hidden" style={{background:'linear-gradient(135deg,rgba(245,158,11,0.08),rgba(16,185,129,0.08))',border:'1px solid rgba(245,158,11,0.25)'}}>
+              <div className="px-5 py-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-base shrink-0">🃏</span>
+                  <div className="min-w-0">
+                    <div className="text-[9px] font-mono font-black text-amber-400 uppercase tracking-widest mb-0.5">Daily Challenge — {new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+                    <p className="text-[12px] font-mono text-white font-bold truncate">{dailyChallenge.q}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {dailyChallenge.opts.map(opt => (
+                    <button key={opt} onClick={() => setDcAnswered(opt)}
+                      className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                        dcAnswered === opt
+                          ? opt === dailyChallenge.a
+                            ? 'bg-green-500/20 text-green-300 border-green-500/50'
+                            : 'bg-red-500/20 text-red-300 border-red-500/50'
+                          : dcAnswered && opt === dailyChallenge.a
+                            ? 'bg-green-500/20 text-green-300 border-green-500/50'
+                            : 'bg-white/5 text-gray-400 border-white/10 hover:border-amber-500/40 hover:text-amber-300'
+                      }`}
+                      disabled={!!dcAnswered}
+                    >{opt}</button>
+                  ))}
+                  <button onClick={() => setShowDailyChallenge(false)} className="text-gray-600 hover:text-gray-400 ml-1"><X size={13}/></button>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Breadcrumb */}
           <div className="ns-no-print flex items-center gap-2 px-6 py-2 text-[12px] font-mono text-[#a3b3cc] mb-4">
             <Radar size={14} className="text-[#a3b3cc]" />
-            <span className="font-bold">Network Suit</span>
+            <span className="font-bold">Network Suite</span>
             <ChevronRight size={12} />
             <span className="text-[#8b949e]">{activeSuite ? 'Suite Features' : 'Internet Protocol Tools'}</span>
             <ChevronRight size={12} />
